@@ -4,38 +4,39 @@ import config from '../config';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import CircleButton from "../CircleButton/CircleButton";
 import ValidationError from '../ValidationError';
+import NotefulForm from '../NotefulForm/NotefulForm';
 export default class AddFolder extends Component {
     static contextType = ApiContext;
-    constructor(props) {
-        super(props);
+    constructor() {
+        super();
         this.state = {
-            name: {
-                value: '',
-                touched: false
-            },
-            id: ''
+            error: null,
+            name: '',
+            validName: false,
+            message: ''
         };
     }
-    updateName(name) {
-        this.setState({ name: {value:name, touched: true} });
-    }
-    createFolderId() {
-        let min = 1000;
-        let max = 1000000;
-        let folderId = Math.floor(Math.random() * (max - min + 1) + min);
-        this.setState({id: folderId});
-        console.log(folderId)
-    }
-    handleSubmit = e => {
+
+    validateName = e => {
         e.preventDefault();
-        const folder = {
-            id: this.state.id,
-            name: this.state.name.value
-        }
-        console.log(folder);
+        if (!this.state.name) {
+            this.setState({
+                message: 'Folder name can not be blank',
+                validName: false
+            });
+        } else {
+            this.setState({
+                message: '',
+                validName: true
+            }, 
+            this.handleAddfolder()
+        );}
+    }
+
+    handleAddfolder = () => {
         fetch(`${config.API_ENDPOINT}/folders`, {
           method: "POST",
-          body: JSON.stringify(folder),
+          body: JSON.stringify({name: this.state.name}),
           headers: {
             "Content-type": "appliction/json",
             'Accept': 'application/json'
@@ -43,41 +44,34 @@ export default class AddFolder extends Component {
         })
         .then(res => {
             if(!res.ok) {
-                return res.json().then(error => {
-                    throw error
-                })
+                throw new Error('Something went wrong');
             }
-            return res.json()
+            return res
         })
+        .then(res => res.json())
         .then(data => {
-            this.setState({
-                name: {value: ''},
-                id: ''
-            })
-            this.context.addFolder(data)
-            console.log(this.context);
+            this.context.addFolder(data);
+            console.log(data)
             this.props.history.push("/");
         })
         .catch(error => {
+            this.setState({
+                error: error.message
+            });
             console.error(error)
-        })
+        });
     }
     
-validateName() {
-    const name = this.state.name.value.trim();
-    if ( name.length === 0) {
-        return 'Name is required';
-    } else if (name.length < 3) {
-        return 'Name must be at least 3 characters long';
+    
+    nameChange = name => {
+        this.setState({name: name});
     }
-}   
  render() {
-        const nameError = this.validateName();
         return (
           <div className="add-folder">
-            <form 
+            <NotefulForm 
                 className="add__folder__form" 
-                onSubmit={e => this.handleSubmit(e)}>
+                onSubmit={e => this.validateName(e)}>
               <h2>Add Folder</h2>
               <div className="form-group">
                 <label htmlFor="name">Enter Folder Name</label>
@@ -86,24 +80,31 @@ validateName() {
                   name="name"
                   id="name"
                   className="name__field"
-                  onChange={e => this.updateName(e.target.value)}
+                  onChange={e => this.nameChange(e.target.value)}
                 />
-                {this.state.name.touched && (
-                  <ValidationError message={nameError} />
+                {this.state.validName && (
+                  <div>
+                      <p>{this.state.message}</p>
+                  </div>
                 )}
-                <button type='button' onClick={() => this.createFolderId()}>Click for Id</button>
+                
                 <button type="submit">Save</button>
               </div>
-            </form>
-            <CircleButton
-              tag="button"
-              role="link"
-              onClick={() => this.props.history.goBack()}
-              className="NotePageNav__back-button">
-              <FontAwesomeIcon icon="chevron-left" />
-              <br />
-              Back
-            </CircleButton>
+              <CircleButton
+                tag="button"
+                role="link"
+                onClick={() => this.props.history.goBack()}
+                className="NotePageNav__back-button">
+                <FontAwesomeIcon icon="chevron-left" />
+                <br />
+                Back
+              </CircleButton>
+            </NotefulForm>
+            {this.state.error && (
+                <div>
+                    <p>{this.state.error}</p>
+                </div>
+            )}
           </div>
         );
     }
