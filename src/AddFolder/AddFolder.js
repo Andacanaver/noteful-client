@@ -38,7 +38,7 @@ export default class AddFolder extends Component {
           method: "POST",
           body: JSON.stringify({name: this.state.name}),
           headers: {
-            "Content-type": "appliction/json",
+            "Content-type": "application/json",
             'Accept': 'application/json'
           }
         })
@@ -52,6 +52,7 @@ export default class AddFolder extends Component {
         .then(data => {
             this.context.addFolder(data);
             console.log(data)
+            console.log(this.props.history)
             this.props.history.push("/");
         })
         .catch(error => {
