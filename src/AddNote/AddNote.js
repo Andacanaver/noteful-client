@@ -5,8 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import CircleButton from "../CircleButton/CircleButton";
 import ValidationError from "../ValidationError";
 import NotefulForm from "../NotefulForm/NotefulForm";
-import { format } from "date-fns";
-
+import ErrorBoundry from '../ErrorBoundry';
 
 export default class AddNote extends Component {
         static contextType = ApiContext;
@@ -23,28 +22,24 @@ export default class AddNote extends Component {
                 touched: false
             },
             content: '',
-            modified: ''
+            modified: new Date()
         }
     }
     
     
     handleSumbit = e => {
         e.preventDefault();
-        this.dateChange();
         this.handleAddNote();
     }
-    dateChange = () => {
-        const date = new Date();
-        this.setState({modified: date})
-    }
+    
     handleAddNote = () => {
-        
         const note = {
             name: this.state.noteName.name,
             folderId: this.state.noteFolder.folder,
             content: this.state.content,
             modified: this.state.modified
         }
+       
         fetch(`${config.API_ENDPOINT}/notes`, {
           method: "POST",
           body: JSON.stringify(note),
@@ -83,7 +78,7 @@ export default class AddNote extends Component {
     contentChange = content => {
         this.setState({content: content})
     }
-    validateName() {
+    validateName = () => {
         const name = this.state.noteName.name.trim();
         if (name.length === 0) {
             return 'Name is required';
@@ -91,37 +86,40 @@ export default class AddNote extends Component {
             return 'Name must be at least 3 characters long';
         }
     }
-    validateFolder() {
+    
+    validateFolder = () => {
         const folder = this.state.noteFolder.folder;
         if(folder === '' || folder === 0) {
             return 'Please select a folder to put the note in';
         } 
     }
     render() {
-        const {folders = [], notes = []} = this.context
+        const {folders = []} = this.context
         const folderError = this.validateFolder();
         const nameError = this.validateName();
         return(
             <div>
                 <NotefulForm className='add__note__form' onSubmit={e => this.handleSumbit(e)}>
-                    <h2>Add Note</h2>
-                    <div className='form-group'>
-                        <label htmlFor='name'>Enter Note Name</label>
-                        <input type='text' id='name' name='name' onChange={e => this.nameChange(e.target.value)}/>
-                        {this.state.noteName.touched && (<ValidationError message={nameError}/>)}
-                        <select id='folder-select' onChange={e => this.folderChange(e.target.value)}>
-                            <option value='0'>Select a folder</option>
-                            {folders.map(folder => (
-                                <option value={folder.id}>{folder.name}</option>
-                            ))}
-                        </select>
-                        {this.state.noteFolder.touched && (<ValidationError message={folderError}/>)}
-                        <label htmlFor='content'>
-                            Enter Note Content
-                        </label>
-                        <input type='text' id='content' name='content' onChange={e => this.contentChange(e.target.value)}/>
-                        <button type='submit'>Save</button>
-                    </div>
+                    <ErrorBoundry>
+                        <h2>Add Note</h2>
+                        <div className='form-group'>
+                            <label htmlFor='name'>Enter Note Name</label>
+                            <input type='text' id='name' name='name' onChange={e => this.nameChange(e.target.value)}/>
+                            {this.state.noteName.touched && (<ValidationError message={nameError}/>)}
+                            <select id='folder-select' onChange={e => this.folderChange(e.target.value)}>
+                                <option value='0'>Select a folder</option>
+                                {folders.map(folder => (
+                                    <option value={folder.id}>{folder.name}</option>
+                                ))}
+                            </select>
+                            {this.state.noteFolder.touched && (<ValidationError message={folderError}/>)}
+                            <label htmlFor='content'>
+                                Enter Note Content
+                            </label>
+                            <input type='text' id='content' name='content' onChange={e => this.contentChange(e.target.value)}/>
+                            <button type='submit'>Save</button>
+                        </div>
+                    </ErrorBoundry>
                 </NotefulForm>
                 <CircleButton
                     tag="button"
